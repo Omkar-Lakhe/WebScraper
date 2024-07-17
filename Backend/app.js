@@ -1,10 +1,12 @@
+require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
 
 // Define your API key and Custom Search Engine (CSE) ID
-const API_KEY = 'AIzaSyAax-OQuGOn-i6TAIDlnr4TaRBAwXtLy3U';
-const CX = 'b54a11be39a4444f1';
+const API_KEY = process.env.API_KEY;
+const CX = process.env.CX;
+
 
 const app = express();
 const port = 3001;
