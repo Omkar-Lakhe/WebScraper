@@ -108,14 +108,14 @@ const SearchForm = () => {
                             <tbody className='shadow-md'>
                                 {results.map((result, index) => (
                                     <tr key={index} className="hover:bg-gray-100">
-                                        <td className="border px-4 text-justify py-2">{result.title}</td>
+                                        <td className="border px-4  py-2">{result.title}</td>
                                         <td className="border px-4 text-justify py-2">
                                             <a href={result.link} target="_blank" rel="noopener noreferrer" className="text-indigo-500 hover:underline">{result.link}</a>
                                         </td>
-                                        <td className="border px-4 text-justify py-2">
+                                        <td className="border px-4 py-2">
                                             {result.hasSubmissionLinks ? 'Contains submission links or buttons' : 'Does not contain submission links or buttons'}
                                         </td>
-                                        <td className="border px-4 text-justify py-2">
+                                        <td className="border px-4 py-2">
                                             {result.expiryDates.length > 0 ? (
                                                 <ul>
                                                     {result.expiryDates.map((date, i) => (
