@@ -43,7 +43,7 @@ const processSearchResults = (searchResults) => {
     return results;
 };
 
-const buildQuery = (baseQuery, keyword1, keyword2, excludeWord, textBoxQuery = '') => {
+const buildQuery = (keyword1, keyword2, excludeWord, textBoxQuery = '') => {
     const query = `${textBoxQuery} ${keyword1} ${keyword2} -${excludeWord}`;
     return query.trim();
 };
@@ -88,22 +88,37 @@ async function fetchPageContent(url) {
     }
 }
 
-function checkForSubmissionLinks(html) {
+function getSubmissionLinks(html) {
     const $ = cheerio.load(html);
-    let found = false;
+    let submissionLinks = [];
 
-    $('a, button, input[type="submit"]').each((index, element) => {
+    $('a, button, input[type="submit"], form').each((index, element) => {
         const text = $(element).text().toLowerCase();
         const value = $(element).val() ? $(element).val().toLowerCase() : '';
+        const href = $(element).attr('href');
+        const action = $(element).attr('action');
+        const type = $(element).attr('type');
 
         submissionKeywords.forEach(keyword => {
             if (text.includes(keyword) || value.includes(keyword)) {
-                found = true;
+                if (href) {
+                    submissionLinks.push(href);
+                } else if (action) {
+                    submissionLinks.push(action);
+                } else if (type === 'submit') {
+                    const formAction = $(element).closest('form').attr('action');
+                    if (formAction) {
+                        submissionLinks.push(formAction);
+                    }
+                }
             }
         });
     });
 
-    return found;
+    // Ensure unique links only
+    submissionLinks = [...new Set(submissionLinks)];
+
+    return submissionLinks;
 }
 
 function extractExpiryDates(html) {
@@ -113,13 +128,17 @@ function extractExpiryDates(html) {
     $('body').each((index, element) => {
         const text = $(element).text().toLowerCase();
 
-        expiryKeywords.forEach(keyword => {
+        submissionKeywords.forEach(keyword => {
             if (text.includes(keyword)) {
                 const regexPatterns = [
                     /\b\d{1,2}(?:th|st|nd|rd)?\s+\w+\s+\d{4}\b/g,   // e.g., 24th March 2024
                     /\b\d{1,2}\/\d{1,2}\/\d{4}\b/g,               // e.g., 24/04/2024
                     /\b\w+\s+\d{1,2},?\s+\d{4}\b/g,                // e.g., March 24 2024
-                    /\b\d{1,2}\.\d{1,2}\.\d{4}\b/g                 // e.g., 31.07.2024
+                    /\b\d{1,2}\.\d{1,2}\.\d{4}\b/g,                 // e.g., 31.07.2024
+                    /\b\d{1,2}(?:th|st|nd|rd)?\s+\w+\s+\d{2}\b/g,  // e.g., 24th March 24
+                    /\b\d{1,2}\/\d{1,2}\/\d{2}\b/g,               // e.g., 24/04/24
+                    /\b\w+\s+\d{1,2},?\s+\d{2}\b/g,                // e.g., March 24 24
+                    /\b\d{1,2}\.\d{1,2}\.\d{2}\b/g                 // e.g., 31.07.24
                 ];
 
                 regexPatterns.forEach(pattern => {
@@ -138,31 +157,36 @@ function extractExpiryDates(html) {
         'DD MMMM YYYY',
         'DD/MM/YYYY',
         'MMMM DD, YYYY',
-        'DD.MM.YYYY'
+        'DD.MM.YYYY',
+        'DD MMMM YY',
+        'DD/MM/YY',
+        'MMMM DD, YY',
+        'DD.MM.YY'
     ]).format('YYYY-MM-DD'));
 
     return standardDates.filter(date => date !== 'Invalid date');
 }
 
+
 async function checkSubmissionLinksAndExpiryDatesFromUrl(url) {
     const htmlContent = await fetchPageContent(url);
     if (htmlContent) {
-        const hasSubmissionLinks = checkForSubmissionLinks(htmlContent);
+        const submissionLinks = getSubmissionLinks(htmlContent);
         const expiryDates = extractExpiryDates(htmlContent);
-        return { hasSubmissionLinks, expiryDates };
+        return { submissionLinks, expiryDates };
     } else {
-        return { hasSubmissionLinks: false, expiryDates: [] };
+        return { submissionLinks: [], expiryDates: [] };
     }
 }
 
 app.get('/search', async (req, res) => {
     const { textBoxQuery, keyword1, keyword2, excludeWord } = req.query;
 
-    const baseQuery = 'Indian cricket team';
+    // const baseQuery = 'Indian cricket team';
     const sixMonthsAgo = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const dateRestrict = 'd6';
 
-    const query = buildQuery(baseQuery, keyword1, keyword2, excludeWord, textBoxQuery);
+    const query = buildQuery(keyword1, keyword2, excludeWord, textBoxQuery);
     const searchResults = await googleSearch(query, API_KEY, CX, dateRestrict);
     const usableResults = processSearchResults(searchResults);
 
@@ -171,7 +195,7 @@ app.get('/search', async (req, res) => {
         return {
             title: result.title,
             link: result.link,
-            hasSubmissionLinks: details.hasSubmissionLinks,
+            submissionLinks: details.submissionLinks,
             expiryDates: details.expiryDates
         };
     }));
