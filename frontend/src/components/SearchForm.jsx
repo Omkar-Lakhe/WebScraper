@@ -115,7 +115,7 @@ const SearchForm = () => {
           </form>
           <div className="results">
             <h2 className="text-2xl font-bold mb-4">Search Results</h2>
-            <div className="">
+            <div className="container mx-auto p-4">
               <table className="min-w-full bg-white shadow-md rounded-lg overflow-hidden border-separate space-y-6 border-spacing-y-2">
                 <thead className="shadow-md">
                   <tr className="bg-blue-100 text-black">
@@ -138,25 +138,28 @@ const SearchForm = () => {
                     <tr key={index} className="hover:bg-gray-100">
                       <td className="border px-4  py-2">{result.title}</td>
                       <td className="border px-4 text-justify text-wrap py-2">
+                        <div className='max-w-xs truncate'>
                         <a
                           href={result.link}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-indigo-500 text-wrap hover:underline"
+                          className="text-indigo-500 text-wrap hover:underline break-words"
                         >
                           {result.link}
                         </a>
+                        </div>
                       </td>
                       <td className="border px-4 py-2">
+                        <div className="max-w-xs truncate"></div>
                         {result.submissionLinks &&
                         result.submissionLinks.length > 0 ? (
                           result.submissionLinks.map((link, idx) => (
-                            <div key={idx}>
+                            <div key={idx} className='w-[23rem] break-words'>
                               <a
                                 href={link}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-indigo-500 text-wrap hover:underline"
+                                className="text-indigo-500 text-wrap hover:underline break-words"
                               >
                                 {link}
                               </a>
